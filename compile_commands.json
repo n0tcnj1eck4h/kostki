@@ -1,0 +1,30 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-I/usr/lib/pkgconfig/../../include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "main.o",
+      "main.c"
+    ],
+    "directory": "/home/aahneji/repos/kostka",
+    "file": "/home/aahneji/repos/kostka/main.c",
+    "output": "/home/aahneji/repos/kostka/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-I/usr/lib/pkgconfig/../../include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "glad.o",
+      "glad.c"
+    ],
+    "directory": "/home/aahneji/repos/kostka",
+    "file": "/home/aahneji/repos/kostka/glad.c",
+    "output": "/home/aahneji/repos/kostka/glad.o"
+  }
+]
