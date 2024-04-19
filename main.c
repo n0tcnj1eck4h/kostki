@@ -37,7 +37,7 @@ typedef struct {
 
 int main(int argc, char* argv[]) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-	SDL_Window* window = SDL_CreateWindow("Kostka", 800, 600, SDL_WINDOW_OPENGL);
+	SDL_Window* window = SDL_CreateWindow("Kostka", 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	SDL_GLContext context = SDL_GL_CreateContext(window);
 
 	gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
@@ -88,6 +88,17 @@ int main(int argc, char* argv[]) {
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
 	glUniformBlockBinding(program, ubo_index, 0);
 
+	uint32_t storage_data[16 * 16 * 16] = {0};
+	storage_data[1] = 0x00FF0000;
+	storage_data[2] = 0x0000FF00;
+	storage_data[3] = 0x000000FF;
+
+	GLuint ssbo;
+	glGenBuffers(1, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(storage_data), storage_data, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+
 	glClearColor(1.0, 0.0, 0.0, 1.0);
 
 	uint64_t time = SDL_GetTicks();
@@ -99,7 +110,10 @@ int main(int argc, char* argv[]) {
 	glm_vec3_crossn(uniform.camera_direction, UP, camera_right);
 
 	bool capturing_input = false;
-	float sensitivity = 0.01;
+	float sensitivity = 0.005;
+	float speed = 20;
+
+	SDL_GL_SetSwapInterval(1);
 
 	SDL_Event event;
 	while (1) {
@@ -123,6 +137,12 @@ int main(int argc, char* argv[]) {
 			case SDL_EVENT_QUIT:
 				goto exit;
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+				if (capturing_input && event.button.button) {
+					int64_t index = (int64_t)uniform.camera_position[0] + (int64_t)uniform.camera_position[1] * 16 + (int64_t)uniform.camera_position[2] * 16 * 16;
+					index %= 16 * 16 * 16;
+					storage_data[index] = 0x00FF00FF;
+					glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(storage_data), storage_data, GL_STATIC_DRAW);
+				}
 				capturing_input = true;
 				SDL_SetRelativeMouseMode(SDL_TRUE);
 				break;
@@ -133,28 +153,34 @@ int main(int argc, char* argv[]) {
 				glm_vec3_rotate(uniform.camera_direction, -event.motion.yrel * sensitivity, camera_right);
 				glm_vec3_rotate(uniform.camera_direction, -event.motion.xrel * sensitivity, UP);
 				break;
+
+			case SDL_EVENT_WINDOW_RESIZED:
+				glViewport(0, 0, event.window.data1, event.window.data2);
+				uniform.screen_size[0] = event.window.data1;
+				uniform.screen_size[1] = event.window.data2;
 			}
 		}
 
-		printf("%f, %f, %f\n", uniform.camera_position[0], uniform.camera_position[1], uniform.camera_position[2]);
+		printf("%f, %f, %f, %f, %f, %f\n", uniform.camera_position[0], uniform.camera_position[1], uniform.camera_position[2], uniform.camera_direction[0], uniform.camera_direction[1], uniform.camera_direction[2]);
+		printf("%f\n", 1 / delta);
 
 		if (keyboard_state[SDL_SCANCODE_W])
-			glm_vec3_muladds(uniform.camera_direction, delta, uniform.camera_position);
+			glm_vec3_muladds(uniform.camera_direction, delta * speed, uniform.camera_position);
 
 		if (keyboard_state[SDL_SCANCODE_S])
-			glm_vec3_muladds(uniform.camera_direction, -delta, uniform.camera_position);
+			glm_vec3_muladds(uniform.camera_direction, -delta * speed, uniform.camera_position);
 
 		if (keyboard_state[SDL_SCANCODE_D])
-			glm_vec3_muladds(camera_right, delta, uniform.camera_position);
+			glm_vec3_muladds(camera_right, delta * speed, uniform.camera_position);
 
 		if (keyboard_state[SDL_SCANCODE_A])
-			glm_vec3_muladds(camera_right, -delta, uniform.camera_position);
+			glm_vec3_muladds(camera_right, -delta * speed, uniform.camera_position);
 
 		if (keyboard_state[SDL_SCANCODE_SPACE])
-			glm_vec3_muladds(UP, delta, uniform.camera_position);
+			glm_vec3_muladds(UP, delta * speed, uniform.camera_position);
 
 		if (keyboard_state[SDL_SCANCODE_LCTRL])
-			glm_vec3_muladds(UP, -delta, uniform.camera_position);
+			glm_vec3_muladds(UP, -delta * speed, uniform.camera_position);
 
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(UniformData), &uniform);
 		glDrawArrays(GL_TRIANGLES, 0, 6);

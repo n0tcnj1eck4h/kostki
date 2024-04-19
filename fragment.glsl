@@ -8,6 +8,11 @@ layout(std140, column_major, binding=0) uniform UniformBlock {
   vec2 screen_size;
 };
 
+layout(std430, binding = 0) buffer StorageBlock
+{
+  uint storage_data[];
+};
+
 const vec3 UP = vec3(0,1,0);
 
 const uint MAX_ITERATIONS = 1024;
@@ -32,6 +37,8 @@ void main() {
 
   vec3 ray_length_1d = abs(vec3(ipos + (istep + ivec3(1)) / 2) - camera_position) * S;
 
+  float bloom = dot(camera_direction, ray_direction);
+
   float dist = 0;
   for(uint i = 0; i < MAX_ITERATIONS && dist < MAX_DISTANCE; i++){
     if(ray_length_1d.x < ray_length_1d.y && ray_length_1d.x < ray_length_1d.z) {
@@ -50,7 +57,18 @@ void main() {
       ray_length_1d.z += S.z;
     }
 
+    int array_index = (ipos.x + ipos.y * 16 + ipos.z * 16 * 16) % (16 * 16 * 16);
+    uint block_data = storage_data[array_index];
+    if(block_data != 0) {
+      float r = float(block_data & 0x00FF0000) / float(0x00FF0000);
+      float g = float(block_data & 0x0000FF00) / float(0x0000FF00);
+      float b = float(block_data & 0x000000FF) / float(0x000000FF);
+
+      color = vec4(r, g, b, 1) / dist * 10.0;
+      return;
+    }
+
   }
 
-  color = vec4(vec3(dot(camera_direction, ray_direction)),1.0);
+  color = vec4(vec3(0) * bloom,1);
 }
