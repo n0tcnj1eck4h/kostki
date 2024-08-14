@@ -60,9 +60,9 @@ void main() {
     int array_index = (ipos.x + ipos.y * 16 + ipos.z * 16 * 16) % (16 * 16 * 16);
     uint block_data = storage_data[array_index];
     if(block_data != 0) {
-      float r = float(block_data & 0x00FF0000) / float(0x00FF0000);
-      float g = float(block_data & 0x0000FF00) / float(0x0000FF00);
-      float b = float(block_data & 0x000000FF) / float(0x000000FF);
+      float r = float((block_data & 0x00FF0000) >> 16) / 256.0;
+      float g = float((block_data & 0x0000FF00) >> 8 ) / 256.0;
+      float b = float( block_data & 0x000000FF       ) / 256.0;
 
       color = vec4(r, g, b, 1) / dist * 10.0;
       return;

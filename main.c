@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_EVENT_KEY_DOWN:
-				switch (event.key.keysym.scancode) {
+				switch (event.key.scancode) {
 				case SDL_SCANCODE_ESCAPE:
 					capturing_input = false;
 					SDL_SetRelativeMouseMode(false);
@@ -192,7 +192,7 @@ exit:
 	glDeleteBuffers(1, &ubo);
 	glDeleteVertexArrays(1, &useless_vao);
 	glDeleteProgram(program);
-	SDL_GL_DeleteContext(context);
+	SDL_GL_DestroyContext(context);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;
